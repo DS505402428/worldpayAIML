@@ -1,0 +1,12 @@
+groups:
+- name: smoke
+  interval: 15s
+  rules:
+  - alert: AlwaysFires
+    expr: vector(1)
+    for: 0s
+    labels:
+      severity: info
+    annotations:
+      summary: "Smoke alert"
+      description: "This should always be firing."

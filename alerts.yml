@@ -1,0 +1,51 @@
+# alerts.yml
+# Alerting rules for the AI Platform stack.
+# This file is loaded by Prometheus via `rule_files` in prometheus.yml.
+
+groups:
+  - name: ai-platform-alerts
+    rules:
+      # CPU approx. >80% of a single core over 30s (for testing)
+      - alert: HighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="ai-platform"}[5m]) > 0.8
+        for: 30s
+        labels:
+          severity: warning
+          service: ai-platform
+        annotations:
+          summary: "High CPU usage on AI Platform"
+          description: "process CPU > 80% of a core for 30s (value={{ $value }})"
+
+      # Memory RSS > 512MiB over 30s (for testing)
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="ai-platform"} > 512 * 1024 * 1024
+        for: 30s
+        labels:
+          severity: warning
+          service: ai-platform
+        annotations:
+          summary: "High memory usage on AI Platform"
+          description: "RSS > 512MiB for 30s (value={{ $value }})"
+
+      # ai-platform scrape target down for 1m
+      - alert: AIPlatformDown
+        expr: up{job="ai-platform"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: ai-platform
+        annotations:
+          summary: "AI Platform service is down"
+          description: "Prometheus cannot scrape ai-platform:8000."
+
+      # HTTP probe for Ollama via Blackbox exporter (configured in prometheus.yml)
+      # Fires if the probe to /api/version fails for 1m
+      - alert: OllamaHTTPProbeFailing
+        expr: probe_success{instance="http://ollama:11434/api/version"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: ollama
+        annotations:
+          summary: "Ollama HTTP probe failing"
+          description: "Blackbox probe to /api/version failing for 1m."
